@@ -43,8 +43,9 @@
 //    * Persisted editor preferences (UI scale, waveform visibility,
 //      freeze momentary mode) serialised alongside APVTS state
 // ============================================================================
-class LoopSaboteurProcessor : public juce::AudioProcessor,
-                              public juce::AudioProcessorValueTreeState::Listener
+// LoopSaboteurXXL: no juce::AudioProcessor base (MPC OS has no JUCE); the engine glue (src/engine.cpp) drives
+// prepareToPlay / processBlock and supplies the play head. See ../VENDORED.md.
+class LoopSaboteurProcessor : public juce::AudioProcessorValueTreeState::Listener
 {
 public:
     LoopSaboteurProcessor();
@@ -56,37 +57,20 @@ public:
     void parameterChanged (const juce::String& paramId, float newValue) override;
 
     // --- AudioProcessor plumbing ----------------------------------------
-    void prepareToPlay (double sampleRate, int samplesPerBlock) override;
-    void releaseResources() override;
+    void prepareToPlay (double sampleRate, int samplesPerBlock);
+    void releaseResources();
 
-   #ifndef JucePlugin_PreferredChannelConfigurations
-    bool isBusesLayoutSupported (const BusesLayout& layouts) const override;
-   #endif
+    void processBlock (juce::AudioBuffer<float>&, juce::MidiBuffer&);
 
-    void processBlock (juce::AudioBuffer<float>&, juce::MidiBuffer&) override;
-
-    juce::AudioProcessorEditor* createEditor() override;
-    bool hasEditor() const override                        { return true; }
-
-    const juce::String getName() const override            { return JucePlugin_Name; }
-
-    bool acceptsMidi() const override                      { return false; }
-    bool producesMidi() const override                     { return false; }
-    bool isMidiEffect() const override                     { return false; }
-    // v0.9.1 — infinite tail so the DAW never stops calling processBlock
-    // during silence. Loop Saboteur's circular buffer, sequencer, and LFOs
-    // must keep running even when input is quiet — otherwise everything
-    // freezes after a few bars of silence.
-    double getTailLengthSeconds() const override           { return std::numeric_limits<double>::infinity(); }
-
-    int getNumPrograms() override                          { return 1; }
-    int getCurrentProgram() override                       { return 0; }
-    void setCurrentProgram (int) override                  {}
-    const juce::String getProgramName (int) override       { return {}; }
-    void changeProgramName (int, const juce::String&) override {}
-
-    void getStateInformation (juce::MemoryBlock& destData) override;
-    void setStateInformation (const void* data, int sizeInBytes) override;
+    // LoopSaboteurXXL: what juce::AudioProcessor gave processBlock. The play head is MPC's song position, filled
+    // in each block by the engine glue; the Force always runs the plugin stereo in, stereo out.
+    juce::AudioPlayHead* getPlayHead() noexcept            { return &playHead; }
+    juce::AudioPlayHead  playHead;
+    int  getTotalNumInputChannels()  const noexcept        { return 2; }
+    int  getTotalNumOutputChannels() const noexcept        { return 2; }
+    void setLatencySamples (int) noexcept                  {}
+    double getSampleRate() const noexcept                  { return sampleRate; }   // the lookahead stays 0 on MPC (no PDC)
+    friend struct LoopSabXXL;   // the engine glue: parameter views, state save/load (src/engine.cpp)
 
     // --- sequencer capacity (public so the editor can size its grid) ---
     static constexpr int kNumScenes    = 8;   // act slots A..H
@@ -383,41 +367,8 @@ public:
     static const ActPreset& getActPreset (int idx) noexcept;
     void applyActPreset (int sceneIdx, int presetIdx);
 
-    // v0.38 — user-saved presets. These are .lpsbact files that live in
-    // a per-user folder; on startup we scan the folder and merge them
-    // into the preset menu under a "User" category. Saving prompts for
-    // a name and writes the file; the menu auto-refreshes.
-    //
-    // getUserPresetsDir  — the folder we read/write to.
-    // saveCurrentActAsUserPreset — snapshot the selected Act and write
-    //   it to the user folder with the given display name.
-    // rescanUserPresets  — reload the file list; call after save or on
-    //   startup. Thread-safe to call from the message thread.
-    // getNumUserPresets / getUserPresetName / getUserPresetFile —
-    //   accessors the editor uses to build the preset menu.
-    // applyUserPreset    — load the nth user preset into the given Act.
-    // deleteUserPreset   — remove the file from disk, then rescan.
-    static juce::File getUserPresetsDir();
-    // v0.7.0 — optional category puts the file in a sub-folder.
-    bool  saveCurrentActAsUserPreset (int sceneIdx, const juce::String& displayName,
-                                      const juce::String& category = {});
-    void  rescanUserPresets();
-    int   getNumUserPresets() const noexcept;
-    juce::String getUserPresetName (int idx) const;
-    juce::String getUserPresetCategory (int idx) const;
-    juce::File   getUserPresetFile (int idx) const;
-    bool  applyUserPreset (int sceneIdx, int userIdx);
-    bool  deleteUserPreset (int userIdx);
-    juce::StringArray getUserPresetCategories() const;
-    // v0.7.0 — category management: rename moves the sub-folder,
-    // delete moves all presets in that sub-folder to the root.
-    bool  renameUserPresetCategory (const juce::String& oldName, const juce::String& newName);
-    bool  deleteUserPresetCategory (const juce::String& categoryName);
-
-    // v0.7.0 — persist UI preferences so new instances start with the
-    // user's preferred settings (tooltips, page-follow, scale, etc.).
-    void  saveGlobalDefaults();
-    void  loadGlobalDefaults();
+    // LoopSaboteurXXL: the user-preset files (.lpsbact in a per-user folder) and the global UI defaults file are
+    // not ported; LoopSaboteurXXL saves whole banks to slots on the device instead (src/engine.cpp).
 
     // v0.11 — randomization helpers. Drive the "RANDOMIZE" button in
     // the sequencer header.
@@ -550,7 +501,6 @@ public:
     // against a pre-save snapshot. Returns an empty string on success or
     // a newline-separated list of mismatches. Intended for manual QA:
     // call from a settings-menu action or from a unit test.
-    juce::String validateStateRoundTrip();
 
     void setSeqLength      (int newLength);
     int  getSeqLength      () const noexcept     { return seqLength.load(); }
@@ -629,15 +579,6 @@ public:
     // Safe to call from the message thread — sets a flag that processBlock
     // picks up on the very next block.
     void debugForceFire() noexcept { dbgForceFire.store (true); }
-
-    // Dump the circular buffer to a WAV file. Returns true on success.
-    bool debugDumpBufferToWav (const juce::File& destFile) const;
-
-    // Step grid dump: returns a compact human-readable string.
-    juce::String debugDumpStepGrid() const;
-
-    // P-lock inspector: returns a multi-line string of all non-NaN locks.
-    juce::String debugDumpAllLocks() const;
 
     // --- momentary freeze (editor-driven) ------------------------------
     // The FREEZE button supports both click-to-toggle and hold-to-
@@ -1369,14 +1310,7 @@ public:
     int   getCircularWritePos  () const noexcept { return writePos; }
     int   getCircularBufferSize() const noexcept { return circularBufferSize; }
 
-    // Act (scene) import/export. XML-based so you can hand-edit files,
-    // version-control them, or paste them into chat. Single-act files
-    // carry one scene; bank files carry all eight. Callers run on the
-    // message thread; these allocate freely.
-    std::unique_ptr<juce::XmlElement> serializeAct       (int sceneIdx) const;
-    std::unique_ptr<juce::XmlElement> serializeAllActs   () const;
-    bool loadActFromXml      (const juce::XmlElement& el, int targetIdx);
-    bool loadAllActsFromXml  (const juce::XmlElement& el);
+    // LoopSaboteurXXL: the XML Act / bank import-export is not ported (no file dialogs on MPC); see bank slots.
 
     // --- parameters ------------------------------------------------------
     juce::AudioProcessorValueTreeState apvts;
@@ -1662,9 +1596,6 @@ private:
     // access is on the message thread; we hold a lock so the editor can
     // safely query during menu construction while a save is happening.
     // v0.7.0 — category holds the sub-folder name (empty = root).
-    struct UserPresetEntry { juce::String name; juce::String category; juce::File file; };
-    mutable juce::CriticalSection userPresetsLock;
-    std::vector<UserPresetEntry> userPresets;
 
     std::atomic<int>  seqLength          { kDefaultSteps };
     std::atomic<bool> seqOn              { false };
@@ -1776,6 +1707,11 @@ private:
     // Stored per-Act (out of SceneData to avoid atomic copy issues).
     // Index as lfos[sceneIdx][lfoIdx] where sceneIdx=0..7, lfoIdx=0..3.
     LfoState lfos[kNumScenes][kNumLfosPerAct];
+    // LoopSaboteurXXL: envelope-follower coefficients per rate index, cached (see processBlock).
+    static constexpr int kFollowCoeffSlots = 16;
+    float  followAttack[kFollowCoeffSlots]    = {};
+    float  followRelease[kFollowCoeffSlots]   = {};
+    double followCoeffRate[kFollowCoeffSlots] = {};
     float lfoModOffset[kNumLockableParams] = {};
 
     // v0.33 — last transport snapshot pushed by processBlock so the UI

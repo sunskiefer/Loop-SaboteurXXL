@@ -3699,6 +3699,10 @@ void LoopSaboteurProcessor::processBlock (juce::AudioBuffer<float>& buffer,
         resolveGfxFlags (selectedScene.load());
     bool anyGlobalFx = gfxCrush || gfxDrive || gfxTone || gfxRingMod || gfxFold;
 
+    // LoopSaboteurXXL: per-block bookkeeping for advanceIdleLfos.
+    std::fill (std::begin (lfoActiveSamples), std::end (lfoActiveSamples), 0);
+    blockInputPeak = 0.0f;
+
     // --- sample loop ----------------------------------------------------
     for (int i = 0; i < numSamples; ++i)
     {
@@ -3709,6 +3713,7 @@ void LoopSaboteurProcessor::processBlock (juce::AudioBuffer<float>& buffer,
 
         // v0.5.0 — envelope follower input level (peak of current sample).
         envFollowInputLevel = juce::jmax (std::abs (cleanL), std::abs (cleanR));
+        blockInputPeak = juce::jmax (blockInputPeak, envFollowInputLevel);   // LoopSaboteurXXL: advanceIdleLfos
 
         // 1. Work out the currently-playing sequencer step first, because
         //    per-step Freeze holds need to be known BEFORE we decide
@@ -3908,6 +3913,12 @@ void LoopSaboteurProcessor::processBlock (juce::AudioBuffer<float>& buffer,
             for (int si = 0; si < kNumScenes; ++si)
             {
                 const bool applyToAudio = (si == activeActForLfo);
+                // LoopSaboteurXXL: only the playing Act's four MODs run sample by sample. The other Acts' MODs
+                // touch no audio (the original runs them for the MOD page's scopes) and are brought forward once
+                // per block instead, by the samples they missed (advanceIdleLfos, after this loop). CPU on the Force.
+                if (! applyToAudio)
+                    continue;
+                ++lfoActiveSamples[si];
 
                 for (int li = 0; li < kNumLfosPerAct; ++li)
                 {
@@ -6214,6 +6225,9 @@ void LoopSaboteurProcessor::processBlock (juce::AudioBuffer<float>& buffer,
         }
     }
 
+    // LoopSaboteurXXL: the Acts whose MODs sat out (or sat out part of) this block catch up (see the LFO loop).
+    advanceIdleLfos (numSamples, isPlaying, ppqStart + (double) numSamples * quartersPerSample, bpm);
+
     // v0.7.0 — Cage 4'33" easter egg: if any active scene has the
     // cageSilence flag set, zero the entire output buffer so the user
     // hears absolute silence — a faithful reproduction of the piece.
@@ -6345,3 +6359,127 @@ void LoopSaboteurProcessor::processBlock (juce::AudioBuffer<float>& buffer,
 
 
 // LoopSaboteurXXL: no createPluginFilter(); src/engine.cpp makes the processor.
+
+// ----------------------------------------------------------------------------
+// LoopSaboteurXXL addition: the choice labels above (file-local here) for the engine glue's value text, so the
+// MPC screen shows exactly the original's names. Read-only; nothing in the DSP changes.
+// ----------------------------------------------------------------------------
+const juce::StringArray& loopSabXXLChoices (const char* paramId)
+{
+    static const juce::StringArray none;
+    static const juce::StringArray scaleTypes = makeScaleTypeChoices();
+    const juce::String id (paramId);
+    if (id == LoopSaboteurProcessor::kParamDivision)  return kDivisionChoices;
+    if (id == LoopSaboteurProcessor::kParamLookback)  return kLookbackChoices;
+    if (id == LoopSaboteurProcessor::kParamJudderDiv) return kJudderDivChoices;
+    if (id == LoopSaboteurProcessor::kParamRate)      return kRateChoices;
+    if (id == LoopSaboteurProcessor::kParamSeqRate)   return kSeqRateChoices;
+    if (id == LoopSaboteurProcessor::kParamScaleRoot) return kScaleRootChoices;
+    if (id == LoopSaboteurProcessor::kParamScaleType) return scaleTypes;
+    if (id == "lfo_sync")                             return kLfoDivisionChoices;
+    if (id == "lfo_hz")                               return kLfoHzChoices;
+    return none;
+}
+
+// ----------------------------------------------------------------------------
+// LoopSaboteurXXL addition: bring the MODs of the Acts that did not play this block (or only part of it) forward by
+// the samples they missed, once per block, with the same rules the per-sample loop applies: a synced LFO's phase
+// from the song position (or from the tempo while stopped), a free LFO's phase from its rate, S&H re-latched on a
+// wrap, an AHD envelope's stages run on, the envelope follower moved toward the block's input peak. Only the
+// playing Act's MODs touch audio, so this keeps the others where the original would have them when their Act
+// comes in, without computing 28 LFOs every sample on the Force.
+// ----------------------------------------------------------------------------
+void LoopSaboteurProcessor::advanceIdleLfos (int numSamples, bool isPlaying, double ppqEnd, double bpm) noexcept
+{
+    const double msPerSample = 1000.0 / sampleRate;
+    for (int si = 0; si < kNumScenes; ++si)
+    {
+        const int n = numSamples - lfoActiveSamples[si];
+        if (n <= 0)
+            continue;
+        for (int li = 0; li < kNumLfosPerAct; ++li)
+        {
+            auto& lfo = lfos[si][li];
+            const int shape = lfo.shape.load();
+            if (shape == kLfoEnvAHD)
+            {
+                if (lfo.envPending)
+                {
+                    lfo.envStage   = 1;
+                    lfo.envPos     = 0.0;
+                    lfo.envPending = false;
+                }
+                double left = n * msPerSample;
+                while (lfo.envStage > 0 && left > 0.0)
+                {
+                    const double aMs = (double) juce::jmax (0.1f, lfo.attackMs.load());
+                    const double hMs = (double) juce::jmax (0.0f, lfo.holdMs.load());
+                    const double dMs = (double) juce::jmax (0.1f, lfo.decayMs.load());
+                    const double len = lfo.envStage == 1 ? aMs : lfo.envStage == 2 ? hMs : dMs;
+                    const double step = juce::jmin (left, len - lfo.envPos);
+                    lfo.envPos += step;
+                    left -= step;
+                    if (lfo.envPos >= len)
+                    {
+                        lfo.envPos = 0.0;
+                        if (lfo.envStage == 1)      { lfo.envStage = (hMs > 0.0) ? 2 : 3; lfo.envValue = 1.0f; }
+                        else if (lfo.envStage == 2) { lfo.envStage = 3; }
+                        else                        { lfo.envStage = 0; lfo.envValue = 0.0f; }
+                    }
+                    else if (lfo.envStage == 1) lfo.envValue = (float) juce::jlimit (0.0, 1.0, lfo.envPos / aMs);
+                    else if (lfo.envStage == 3) lfo.envValue = (float) juce::jlimit (0.0, 1.0, 1.0 - lfo.envPos / dMs);
+                }
+                continue;
+            }
+            if (shape == kLfoEnvFollow)
+            {
+                const int rateIdx = lfo.rateIdx.load();
+                const float smoothMs = juce::jlimit (1.0f, 200.0f, 200.0f / juce::jmax (1.0f, (float) rateIdx));
+                const float a = std::exp (-1.0f / (float) (sampleRate * smoothMs * 0.001f * 0.3f));
+                const float r = std::exp (-1.0f / (float) (sampleRate * smoothMs * 0.001f));
+                const float in = juce::jlimit (0.0f, 1.0f, blockInputPeak * lfo.envFollowGain.load());
+                const float k = std::pow (in > lfo.envFollowValue ? a : r, (float) n);
+                lfo.envFollowValue = in + (lfo.envFollowValue - in) * k;
+                continue;
+            }
+            const int rateIdx = lfo.rateIdx.load();
+            if (rateIdx <= 0)
+                continue;
+            bool wrapped = false;
+            if (lfo.sync.load())
+            {
+                const double lfoQ = lfoDivisionIndexToQuarters (rateIdx);
+                if (lfoQ <= 0.0001)
+                    continue;
+                if (isPlaying)
+                {
+                    double ph = std::fmod (ppqEnd / lfoQ, 1.0);
+                    if (ph < 0.0) ph += 1.0;
+                    lfo.phase = ph;
+                    wrapped = ph < lfo.sAndHPrev;
+                }
+                else
+                {
+                    const double b = (bpm > 1.0) ? bpm : 120.0;
+                    const double secPerCycle = (lfoQ * 60.0) / b;
+                    if (secPerCycle > 1.0e-6)
+                        lfo.phase += (double) n / sampleRate / secPerCycle;
+                    if (lfo.phase >= 1.0) { lfo.phase -= std::floor (lfo.phase); wrapped = true; }
+                }
+            }
+            else
+            {
+                const double hz = lfoHzIndexToHz (rateIdx);
+                if (hz > 1.0e-6 && sampleRate > 1.0)
+                    lfo.phase += (double) n * hz / sampleRate;
+                if (lfo.phase >= 1.0) { lfo.phase -= std::floor (lfo.phase); wrapped = true; }
+            }
+            if (shape == kLfoSandH)
+            {
+                if (wrapped)
+                    lfo.sAndHValue = rng.nextFloat() * 2.0f - 1.0f;
+                lfo.sAndHPrev = lfo.phase;
+            }
+        }
+    }
+}

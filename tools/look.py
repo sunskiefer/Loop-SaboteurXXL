@@ -175,3 +175,69 @@ def cell_image(w, h, letter, num, playing=False, selected=False, marks=()):
     if selected:
         d.rectangle((S, S, w * S - S, h * S - S), outline=YELLOW, width=4 * S)
     return im.resize((w, h), Image.LANCZOS)
+
+
+# ---------------------------------------------------------------------------------------------- step cells, in layers
+# A cell is drawn by three pictures over the page: the top (the Act letter, or a dash; a slash when muted; dimmed
+# past the pattern's end), the marks (dots for p-lock / freeze / condition / ratchet) and the step number.
+CELL_TOP = 0.74
+
+
+def cell_split(h):
+    th = int(round(h * CELL_TOP))
+    return th, h - th
+
+
+def cell_frame(d, x, y, w, h):
+    """the cell's frame and its dark ground, baked into the page"""
+    d.rectangle((x, y, x + w - 1, y + h - 1), fill=(24, 24, 26), outline=(58, 58, 60), width=2)
+
+
+def cell_top_image(w, th, state):
+    """state 0..26: letter = state % 9 (0 dash, 1..8 A..H); 9..17 muted; 18..26 past the pattern's end"""
+    S = SS
+    letter, kind = state % 9, state // 9
+    im = Image.new("RGB", (w * S, th * S), (24, 24, 26))
+    d = ImageDraw.Draw(im)
+    d.line((0, 0, w * S, 0), fill=(58, 58, 60), width=2 * S)
+    d.line((0, 0, 0, th * S), fill=(58, 58, 60), width=2 * S)
+    d.line((w * S - 1, 0, w * S - 1, th * S), fill=(58, 58, 60), width=2 * S)
+    dim = kind == 2
+    if letter:
+        fill = (92, 44, 34) if dim else ORANGE
+        d.rectangle((2 * S, 2 * S, w * S - 2 * S, th * S - S), fill=fill)
+        col = (150, 120, 112) if dim else (255, 255, 255)
+        d.text((w * S / 2, th * S / 2 + S), "ABCDEFGH"[letter - 1], font=anton(int(th * 0.56) * S), fill=col, anchor="mm")
+    else:
+        col = (60, 60, 62) if dim else (110, 110, 110)
+        d.line((w * S * 0.38, th * S / 2, w * S * 0.62, th * S / 2), fill=col, width=3 * S)
+    if kind == 1:
+        d.line((5 * S, th * S - 5 * S, w * S - 5 * S, 6 * S), fill=(235, 235, 235), width=3 * S)
+    return im.resize((w, th), Image.LANCZOS)
+
+
+def cell_dots_image(w, bh, bits):
+    """the marks: p-lock yellow, freeze blue, condition green, ratchet white (the original's legend)"""
+    S = SS
+    im = Image.new("RGB", (w * S, bh * S), (24, 24, 26))
+    d = ImageDraw.Draw(im)
+    d.line((0, 0, 0, bh * S), fill=(58, 58, 60), width=2 * S)
+    d.line((0, bh * S - 1, w * S, bh * S - 1), fill=(58, 58, 60), width=2 * S)
+    cols = [YELLOW, (80, 140, 255), (90, 200, 110), (240, 240, 240)]
+    rr = max(3, int(bh * 0.17)) * S
+    x = 6 * S
+    for b, col in enumerate(cols):
+        if bits & (1 << b):
+            d.ellipse((x, bh * S / 2 - rr, x + 2 * rr, bh * S / 2 + rr), fill=col)
+            x += 2 * rr + 3 * S
+    return im.resize((w, bh), Image.LANCZOS)
+
+
+def cell_number_image(w, bh, num):
+    S = SS
+    im = Image.new("RGB", (w * S, bh * S), (24, 24, 26))
+    d = ImageDraw.Draw(im)
+    d.line((w * S - 1, 0, w * S - 1, bh * S), fill=(58, 58, 60), width=2 * S)
+    d.line((0, bh * S - 1, w * S, bh * S - 1), fill=(58, 58, 60), width=2 * S)
+    d.text((w * S - 5 * S, bh * S / 2), str(num), font=tsemi(int(bh * 0.72) * S), fill=(175, 175, 175), anchor="rm")
+    return im.resize((w, bh), Image.LANCZOS)

@@ -1,0 +1,34 @@
+{
+  "name": "Loop-SaboteurXXL",
+  "vendor": "ANDREALPHEUS",
+  "uid": "AnLs",
+  "version": 1000,
+  "so": "loop_saboteurxxl.so",
+  "params": "params.json",
+  "effect": true,
+  "layout": "layout.conf",
+  "build": {
+    "root": ".",
+    "sources": [
+      "src/engine.cpp",
+      "third_party/loop-saboteur/Source/PluginProcessor.cpp"
+    ],
+    "cflags": [
+      "-std=gnu++17",
+      "-Isrc",
+      "-Isrc/juce_shim",
+      "-Ithird_party/loop-saboteur/Source"
+    ],
+    "libs": [
+      "-lm",
+      "-ldl",
+      "-lpthread"
+    ]
+  },
+  "defines": {
+    "HAS_SONG_POS": 1,
+    "HAS_DISPLAY_REV": 1,
+    "PARAM_TEXT_MAX": 96,
+    "MODULE_DIR": "\"/sdcard/Loop-SaboteurXXL Banks\""
+  }
+}

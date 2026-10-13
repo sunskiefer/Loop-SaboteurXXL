@@ -1707,6 +1707,10 @@ private:
     // Stored per-Act (out of SceneData to avoid atomic copy issues).
     // Index as lfos[sceneIdx][lfoIdx] where sceneIdx=0..7, lfoIdx=0..3.
     LfoState lfos[kNumScenes][kNumLfosPerAct];
+    // LoopSaboteurXXL: the MODs of Acts that are not playing advance once per block (see advanceIdleLfos).
+    int   lfoActiveSamples[kNumScenes] = {};
+    float blockInputPeak = 0.0f;
+    void  advanceIdleLfos (int numSamples, bool isPlaying, double ppqEnd, double bpm) noexcept;
     // LoopSaboteurXXL: envelope-follower coefficients per rate index, cached (see processBlock).
     static constexpr int kFollowCoeffSlots = 16;
     float  followAttack[kFollowCoeffSlots]    = {};

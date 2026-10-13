@@ -102,8 +102,8 @@ def grid(g, select_key):
 PAGES["ACTS SEQ"] = header() + [
     ("strip", "CHANCE", STRIP_L, "orange"),
     ("strip", "MIX", STRIP_R, "white"),
-    ("knob", "chance", 75, 424, 48, "CHANCE"),
-    ("knob", "mix", 1205, 424, 48, "MIX"),
+    ("knob", "chance", 75, 424, 46, "CHANCE"),
+    ("knob", "mix", 1205, 424, 46, "MIX"),
     *knob_row([("preset", "PRESET"), ("globalmix", "GLOBAL MIX"), ("seqrate", "SEQ RATE"), ("swing", "SWING"),
                ("length", "LENGTH"), ("rnd_mode", "RANDOM")], 64, 46, 150, 1130),
     *seq_buttons(272),
@@ -135,9 +135,9 @@ PAGES["MOD"] = header() + [
     ("radio", "mod", 2, 256, 66, 110, 44, "MOD 3"), ("radio", "mod", 3, 372, 66, 110, 44, "MOD 4"),
     ("button", "m_sync", "toggle", 520, 66, 110, 44, "SYNC"),
     *knob_row([("m_shape", "SHAPE"), ("m_rate", "RATE"), ("m_depth", "DEPTH"), ("m_target", "TARGET"),
-               ("m_xtarget", "X-TARGET"), ("m_xdepth", "X-DEPTH")], 116, 52),
+               ("m_xtarget", "X-TARGET"), ("m_xdepth", "X-DEPTH")], 116, 54),
     *knob_row([("m_attack", "ATTACK"), ("m_hold", "HOLD"), ("m_decay", "DECAY"), ("m_trig", "TRIG"),
-               ("m_follow", "FOLLOW GAIN"), ("m_reset", "-")], 316, 52),
+               ("m_follow", "FOLLOW GAIN"), ("m_reset", "-")], 316, 54),
 ]
 PAGES["MOD"] = [w for w in PAGES["MOD"] if not (w[0] == "knob" and w[1] == "m_reset")]
 
@@ -174,7 +174,7 @@ PAGES["CHARACTER"] = header() + [
 # 8. GLOBAL: scale, transport, Act tools, bank slots
 PAGES["GLOBAL"] = header() + [
     title("GLOBAL", 24, 64, 600),
-    *knob_row([("scaleroot", "ROOT"), ("scaletype", "SCALE"), ("transport", "TRANSPORT")], 98, 50, 0, 620),
+    *knob_row([("scaleroot", "ROOT"), ("scaletype", "SCALE"), ("transport", "TRANSPORT")], 98, 54, 0, 620),
     title("ACT", 660, 64, 1256),
     ("button", "act_copy", "momentary", 660, 110, 140, 50, "COPY"),
     ("button", "act_paste", "momentary", 810, 110, 140, 50, "PASTE"),

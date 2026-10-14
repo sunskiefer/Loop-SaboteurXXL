@@ -62,10 +62,15 @@ jobs:
         if: steps.ver.outputs.release == '1'
         run: python3 third_party/mpc-vst-plugins/tools/catalog_check.py dist/*.zip --catalog
 
+      - name: USE ME
+        run: cp docs/Loop-SaboteurXXL-USE-ME.pdf "dist/Loop-SaboteurXXL-${{ steps.ver.outputs.version }}-USE-ME.pdf"
+
       - uses: actions/upload-artifact@v4
         with:
           name: Loop-SaboteurXXL-mpc-armv7
-          path: dist/*.zip
+          path: |
+            dist/*.zip
+            dist/*-USE-ME.pdf
 
       - name: Release
         if: steps.ver.outputs.release == '1'
@@ -75,6 +80,8 @@ jobs:
           target_commitish: ${{ github.sha }}
           name: Loop-SaboteurXXL ${{ steps.ver.outputs.version }}
           make_latest: true
-          files: dist/*.zip
+          files: |
+            dist/*.zip
+            dist/*-USE-ME.pdf
           body_path: .github/RELEASE_NOTES.md
           prerelease: false

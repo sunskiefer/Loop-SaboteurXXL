@@ -1,0 +1,28 @@
+name: attach USE ME
+
+# Attaches docs/Loop-SaboteurXXL-USE-ME.pdf (the USE ME guide, rendered from docs/USE_ME.md) to a release, as
+# Loop-SaboteurXXL-<version>-USE-ME.pdf. Run it by hand for a release that is already out; build.yml attaches it to
+# new releases itself.
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag, e.g. v0.1.0"
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  attach:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Upload
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ inputs.tag }}
+        run: |
+          V="${TAG#v}"
+          cp docs/Loop-SaboteurXXL-USE-ME.pdf "Loop-SaboteurXXL-$V-USE-ME.pdf"
+          gh release upload "$TAG" "Loop-SaboteurXXL-$V-USE-ME.pdf" --clobber -R "$GITHUB_REPOSITORY"

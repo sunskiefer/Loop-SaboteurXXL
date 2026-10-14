@@ -63,7 +63,8 @@ Saboteur's own code; this port gives it MPC screens, Q-Links, project saving and
 6. On **MOD**, set MOD 1's **TARGET** to Pitch and its **RATE** to 1/4: the pitch wobbles with the beat.
 7. Save the lot in a **BANK** on the GLOBAL page, or just save your MPC project.
 
-The full manual: **[docs/USER_GUIDE.md](docs/USER_GUIDE.md)**, every page and control, and what differs from the
+**USE ME** (the complete guide to playing it on MPC OS, also a PDF on each release): **[docs/USE_ME.md](docs/USE_ME.md)**.
+The reference manual: **[docs/USER_GUIDE.md](docs/USER_GUIDE.md)**, every page and control, and what differs from the
 desktop plugin. Loop Saboteur's own manual explains the sound in depth:
 [clickysteve.github.io/Loop-Saboteur](https://clickysteve.github.io/Loop-Saboteur/).
 

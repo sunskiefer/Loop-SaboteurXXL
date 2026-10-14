@@ -1,6 +1,6 @@
 # Loop-SaboteurXXL — USE ME
 
-**Version 0.1.0 · for MPC OS on the Akai Force (first-generation MPC OS units should work too)**
+**Version 0.1.1 · for MPC OS on the Akai Force (first-generation MPC OS units should work too)**
 
 Loop-SaboteurXXL is **Loop Saboteur** by Stephen McLeod Blythe / AMFAS
 ([clickysteve/Loop-Saboteur](https://github.com/clickysteve/Loop-Saboteur)) running as a native insert effect inside
@@ -69,15 +69,15 @@ You need:
 Steps:
 
 1. **Save your MPC project.** The installer stops and restarts MPC.
-2. Download `Loop-SaboteurXXL-0.1.0-mpc-armv7.zip` from the
-   [release page](https://github.com/sunskiefer/Loop-SaboteurXXL/releases/tag/v0.1.0) and unzip it. You get a folder
-   `Loop-SaboteurXXL-0.1.0`.
+2. Download `Loop-SaboteurXXL-0.1.1-mpc-armv7.zip` from the
+   [release page](https://github.com/sunskiefer/Loop-SaboteurXXL/releases/latest) and unzip it. You get a folder
+   `Loop-SaboteurXXL-0.1.1`.
 3. Find the device's IP address (your router's list, or your mod's network page). Below it's `<device-ip>`.
 4. Copy the folder to the device and run the installer:
 
    ```
-   scp -r Loop-SaboteurXXL-0.1.0 root@<device-ip>:/tmp/
-   ssh -t root@<device-ip> sh /tmp/Loop-SaboteurXXL-0.1.0/install.sh
+   scp -r Loop-SaboteurXXL-0.1.1 root@<device-ip>:/tmp/
+   ssh -t root@<device-ip> sh /tmp/Loop-SaboteurXXL-0.1.1/install.sh
    ```
 
 5. Answer **y** when it asks. It checks the device, stops MPC, copies the plugin to
@@ -436,12 +436,13 @@ buttons reach every step).
 | Control | A Q-Link turn |
 | --- | --- |
 | Knob | Turns it |
-| Option list (Division, Preset, Condition…) | One option per Q-Link step |
+| Option list (Division, Preset, Condition, Act…) | One option per three Q-Link clicks (the data wheel too), at most five options a second, so a fast turn doesn't skip |
 | On / off (SEQ ON, FREEZE, LOCK EDIT…) | Right = on, left = off |
-| Action button (RANDOM, CLEAR, UNDO, PANIC, SAVE, LOAD, COPY…) | **Tap these on the screen**: in 0.1.0 a Q-Link turn doesn't fire them |
+| Action button (RANDOM, CLEAR, UNDO, PANIC, SAVE, LOAD, COPY…) | Fires once per turn to the right (a turn to the left does nothing); a tap on the screen fires it too |
 
 **MIDI.** On the track's MIDI input, **CC 20-35** move the SLICE PLAY page's Q-Links 1-16 (CC 20 = LOOKBACK, CC 21 =
-DIVISION, …), and **NRPN n** sets parameter n. Those CCs are used by the plugin only.
+DIVISION, …), and **NRPN n** sets parameter n. Those CCs are used by the plugin only. Option lists follow a CC at
+most five steps a second, like a Q-Link.
 
 ---
 
@@ -500,7 +501,7 @@ your eight Acts, live.
 | **Only dry on some steps** | Empty steps play dry. Stamp an Act, or add a ratchet / p-lock |
 | **A step never fires** | Check its CONDITION, MUTE, the Act's CHANCE, and that its Act's DIVISION lands inside the step |
 | **The knobs change "by themselves"** | LOCK EDIT is on: the knobs show the selected step's p-locks. Turn it off |
-| **RANDOM does nothing** | Choose a RANDOM mode, then **tap** the RANDOM button (Q-Link turns don't fire buttons in 0.1.0) |
+| **RANDOM does nothing** | Choose a RANDOM mode first, then fire the RANDOM button (tap it, or turn its Q-Link to the right) |
 | **BANK LOAD says empty** | Nothing was saved in that slot. The readout shows a slot's state when you tap it |
 | **Crackles** | Too much CPU in a busy project. Try Clean output stages, less STRETCH and SMEAR, or a longer Division, and report it under Issues |
 | **It isn't in the plugin list** | Re-run `install.sh`, and check `MPC.settings` was restored if MPC came up with default settings |
@@ -518,7 +519,7 @@ did and what the readout said.
 - **Uninstall:**
 
   ```
-  ssh -t root@<device-ip> sh /tmp/Loop-SaboteurXXL-0.1.0/uninstall.sh
+  ssh -t root@<device-ip> sh /tmp/Loop-SaboteurXXL-0.1.1/uninstall.sh
   ```
 
   It stops MPC, removes the plugin folder and its plugin-list entry, and starts MPC again. Projects that used it load

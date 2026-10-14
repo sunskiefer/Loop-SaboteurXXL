@@ -174,6 +174,10 @@ Smear character, Varispeed curve. The readout gives each option's description.
 
 - Every control of every page is on a Q-Link, in reading order (top left first), with the Act select last where it
   fits. The step cells are not (STEP and the page buttons reach every step).
+- A Q-Link turn: turns a knob; moves an option list one option per three clicks, at most five a second (a fast turn
+  doesn't skip); switches an on / off control on (right) or off (left); fires a button once per turn to the right
+  (RANDOM, CLEAR, UNDO, PANIC, SAVE, LOAD…; a turn to the left does nothing). These are the rules learned on a Force
+  with RMXXXL and PlateauXXL.
 - MIDI on the track: CC 20-35 move the SLICE PLAY page's Q-Links; NRPN n sets parameter n.
 
 ## Differences from the desktop plugin

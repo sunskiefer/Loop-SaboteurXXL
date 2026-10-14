@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.1
+
+- Q-Links on the Force, with the rules learned on a Force with RMXXXL and PlateauXXL: a button (RANDOM, CLEAR, UNDO,
+  PANIC, SAVE, LOAD, COPY, PASTE…) fires once per Q-Link turn to the right (in 0.1.0 only a tap fired it); an option
+  list moves one option per three Q-Link clicks and at most five options a second, so a fast turn doesn't skip.
+- The USE ME guide (PDF) is attached to every release.
+
 ## 0.1.0
 
 First release: Loop Saboteur 1.0.0 (Stephen McLeod Blythe / AMFAS) as a native MPC OS insert effect for the Akai Force.

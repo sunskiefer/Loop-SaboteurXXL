@@ -1,4 +1,4 @@
-# Loop-SaboteurXXL v0.1.0
+# Loop-SaboteurXXL v0.1.1
 
 **Loop Saboteur, the glitch / chop / beat-slicer effect by Stephen McLeod Blythe (clickysteve), running natively inside
 MPC OS on the Akai Force.**
@@ -12,7 +12,7 @@ sequencer with trig conditions, ratchets, freezes, mutes and per-step parameter 
 Saboteur's own code; this port gives it MPC screens, Q-Links, project saving and banks on the device.
 
 > [!NOTE]
-> **Status: 0.1.0, built and tested offline:** the full test suite passes on x86 (ASan + UBSan) and on the ARM
+> **Status: 0.1.1, built and tested offline:** the full test suite passes on x86 (ASan + UBSan) and on the ARM
 > build under QEMU. Not yet tested on an Akai Force: the first device test is next. Report anything odd under [Issues](../../issues).
 
 ![The SLICE PLAY page](docs/img/1-slice-play.png)
@@ -41,7 +41,8 @@ Saboteur's own code; this port gives it MPC screens, Q-Links, project saving and
   ("ACT A   OUTPUT STAGE   Cassette  -  C90 wow + flutter + hiss").
 - **Banks:** 16 slots on the device, each with all eight Acts, their MODs and the pattern. The whole state also saves
   with your MPC project.
-- **Q-Links:** every control of every page, in reading order; Panic, copy / paste / clear for Acts and pages.
+- **Q-Links:** every control of every page, in reading order, buttons included (a turn to the right fires them once),
+  with the Q-Link feel learned on a Force with RMXXXL and PlateauXXL; Panic, copy / paste / clear for Acts and pages.
 
 | | | |
 | --- | --- | --- |

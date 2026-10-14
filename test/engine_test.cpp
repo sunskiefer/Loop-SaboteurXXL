@@ -136,6 +136,7 @@ int main (int argc, char** argv)
         void* x = E->create (nullptr);
         demo (x);
         set (x, "mod", 0);
+        set (x, "division", getv (x, "division"));   // the readout: the control last touched
         FILE* f = std::fopen (valuesFile.c_str(), "w");
         std::fprintf (f, "{\n");
         const int n = lsx_param_count();

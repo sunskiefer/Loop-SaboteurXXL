@@ -2,7 +2,7 @@
   "name": "Loop-SaboteurXXL",
   "vendor": "ANDREALPHEUS",
   "uid": "AnLs",
-  "version": 1000,
+  "version": 1001,
   "so": "loop_saboteurxxl.so",
   "params": "params.json",
   "effect": true,

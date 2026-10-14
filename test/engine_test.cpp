@@ -80,6 +80,12 @@ static Run play (void* x, double seconds, bool playing = true, double ppq0 = 0.0
     return r;
 }
 
+static void hand (void* x, const char* k, double v)
+{
+    play (x, 0.21, false);
+    set (x, k, v);
+}
+
 static void wav (const std::string& path, const std::vector<int16_t>& s)
 {
     FILE* f = std::fopen (path.c_str(), "wb");
@@ -234,7 +240,7 @@ int main (int argc, char** argv)
         // every output stage, every Act
         for (int st = 0; st < 11; ++st)
         {
-            for (int a = 0; a < 8; ++a) { set (x, "act", a); set (x, "e_stage", st); set (x, "e_mix", 1.0); }
+            for (int a = 0; a < 8; ++a) { hand (x, "act", a); set (x, "e_stage", st); set (x, "e_mix", 1.0); }
             Run o = play (x, 1.0);
             CHECK (o.peak <= 1.0 && o.finite, "stage %d peak %g", st, o.peak);
         }
@@ -258,7 +264,7 @@ int main (int argc, char** argv)
         for (int a = 0; a < 8; ++a)
             for (int m = 0; m < 4; ++m)
             {
-                set (x, "act", a); set (x, "mod", m);
+                hand (x, "act", a); hand (x, "mod", m);
                 set (x, "m_shape", (a + m) % 7); set (x, "m_rate", 1 + (a * 3 + m) % 12); set (x, "m_depth", 0.3);
                 set (x, "m_target", 1 + (a + 5 * m) % 29);
             }
@@ -320,17 +326,51 @@ int main (int argc, char** argv)
         E->destroy (x);
     }
 
-    // 7. speed: a heavy session on this machine (the Force is several times slower: see BENCH in the README)
+    // 7. Q-Links as the Force sends them (RMXXXL / PlateauXXL rules): a button fires on a tap and once per turn to the
+    //    right; an option list moves at most one step per 0.2 s, a jump is never held back
+    {
+        void* x = E->create (nullptr);
+        demo (x);
+        const std::string c1 = get (x, "cell1");
+        set (x, "seq_clear", 1.0 / 128.0);            // a Q-Link turn to the right: fires
+        CHECK (getv (x, "cell1") == 0, "a Q-Link turn fires CLEAR");
+        tap (x, "undo");
+        CHECK (get (x, "cell1") == c1, "undo after the Q-Link clear");
+        set (x, "seq_clear", 0.0);                    // a turn to the left: nothing
+        CHECK (get (x, "cell1") == c1, "a turn to the left does nothing");
+        play (x, 0.5, false);                         // a new turn, after a pause
+        set (x, "seq_clear", 1.0 / 128.0);
+        CHECK (getv (x, "cell1") == 0, "a new turn fires again");
+        set (x, "undo", 1.0 / 128.0);                 // another button's turn: fires
+        CHECK (get (x, "cell1") == c1, "UNDO by Q-Link");
+        set (x, "seq_clear", 1.0 / 128.0);            // the same turn of CLEAR goes on: no second fire
+        CHECK (get (x, "cell1") == c1, "one fire per turn");
+        play (x, 0.5, false);
+        set (x, "division", 2); play (x, 0.3, false);
+        set (x, "division", 3);
+        CHECK (getv (x, "division") == 3, "one option step");
+        set (x, "division", 4);
+        CHECK (getv (x, "division") == 3, "a second step within 0.2 s is held back (%g)", getv (x, "division"));
+        play (x, 0.25, false);
+        set (x, "division", 4);
+        CHECK (getv (x, "division") == 4, "a step after 0.2 s goes (%g)", getv (x, "division"));
+        set (x, "division", 7);
+        CHECK (getv (x, "division") == 7, "a jump is never held back (%g)", getv (x, "division"));
+        E->destroy (x);
+    }
+
+    // 8. speed: a heavy session on this machine (the Force is several times slower: see BENCH in the README)
     {
         void* x = E->create (nullptr);
         demo (x);
         for (int a = 0; a < 8; ++a)
             for (int m = 0; m < 4; ++m)
             {
-                set (x, "act", a); set (x, "mod", m);
+                hand (x, "act", a); hand (x, "mod", m);
                 set (x, "m_shape", m % 2 ? 0 : 6); set (x, "m_rate", 5); set (x, "m_depth", 0.4); set (x, "m_target", 8);
             }
-        for (int a = 0; a < 8; ++a) { set (x, "act", a); set (x, "e_stage", 3); set (x, "e_mix", 0.8); set (x, "stretch", 0.6); set (x, "smear", 0.5); }
+        for (int a = 0; a < 8; ++a) { hand (x, "act", a); set (x, "e_stage", 3); set (x, "e_mix", 0.8); set (x, "stretch", 0.6); set (x, "smear", 0.5); }
+        CHECK (getv (x, "act") == 7 && getv (x, "e_stage") == 3, "heavy setup applied (act %g)", getv (x, "act"));
         const auto t0 = std::chrono::steady_clock::now();
         play (x, 30.0, true, 0.0, false, 8.0);
         const double secs = std::chrono::duration<double> (std::chrono::steady_clock::now() - t0).count();

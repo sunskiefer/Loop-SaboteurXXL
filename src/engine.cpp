@@ -233,6 +233,14 @@ struct LoopSabXXL
     bool songPlaying = false;
     long long framesSinceSong = 0;
 
+    // Q-Links on the Force (RMXXXL 1.2.1 / PlateauXXL, learned on a Force): a button fires on every tap and once per
+    // Q-Link turn to the right; an option list (more than two options) moves at most one step per 0.2 s. A turn is a
+    // burst of sets: sets closer than kGestureFrames are one turn. Timed in audio frames (MPC runs audio constantly).
+    static constexpr unsigned long long kGestureFrames = 15435;   // 0.35 s
+    static constexpr unsigned long long kStepLockFrames = 8820;   // 0.2 s
+    unsigned long long frames = 0;
+    std::vector<unsigned long long> lastTouch, lastStep;
+
     // per-block float buffers for processBlock
     float bufL[128], bufR[128];
     float* chans[2] = { bufL, bufR };
@@ -241,6 +249,8 @@ struct LoopSabXXL
     explicit LoopSabXXL (const char* dir)
     {
         if (dir) dataDir = dir;
+        lastTouch.assign (g_defs.size(), 0);
+        lastStep.assign (g_defs.size(), 0);
         p.prepareToPlay (44100.0, 128);
         buildTargets();
     }
@@ -270,6 +280,7 @@ struct LoopSabXXL
         else
             info.ppq = juce::Optional<double>();
         framesSinceSong += frames;
+        this->frames += (unsigned long long) frames;
 
         for (int i = 0; i < frames; ++i)
         {
@@ -552,7 +563,15 @@ struct LoopSabXXL
         if (d.flags & (RO | STR)) return;
         if (d.flags & MOM)
         {
-            if (v > 0.5f) action (id);
+            // A tap sends 1 (a trigger reads back 0); a Q-Link turn to the right sends small values above 0 and fires
+            // once per turn; a turn to the left sends 0 and does nothing.
+            if (v <= 0.0f) return;
+            const unsigned long long now = frames ? frames : 1;
+            const bool tap = v > 0.5f;
+            const bool inTurn = lastTouch[(size_t) id] != 0 && now - lastTouch[(size_t) id] < kGestureFrames;
+            lastTouch[(size_t) id] = now;
+            if (! tap && inTurn) return;
+            action (id);
             return;
         }
         v = juce::jlimit (d.min, d.max, v);
@@ -560,6 +579,17 @@ struct LoopSabXXL
         // a host echo (MPC sets a parameter back to the value it was just told): nothing to do. Without this, LOCK
         // EDIT would turn every knob's echo into a p-lock.
         if (std::abs (value (id) - v) < 1e-5f) { touch (id); return; }
+        // an option list moves at most one step per 0.2 s however fast a Q-Link turns; a jump of more than one step
+        // (a tap, a drag) is never held back. The wrapper's UpdateDisplay puts MPC's own guess back to this value.
+        if (d.nopts > 2 && ! (d.flags & RO) && frames > 0)
+        {
+            const int from = (int) std::lround (value (id)), to = (int) v;
+            if (to - from == 1 || from - to == 1)
+            {
+                if (lastStep[(size_t) id] != 0 && frames - lastStep[(size_t) id] < kStepLockFrames) { changed(); return; }
+                lastStep[(size_t) id] = frames;
+            }
+        }
         touch (id);
         const int o = (int) v;
         const int s = sel();
@@ -1238,6 +1268,7 @@ std::string lsx_param_json (int i, void* inst)
         std::snprintf (b, sizeof b, ", \"min\": %.9g, \"max\": %.9g, \"default\": %.9g", d.min, d.max, d.def);
         o += b;
     }
+    if (d.nopts > 2 && ! (d.flags & RO)) o += ", \"qlink_ticks\": 3";   // three Q-Link clicks per option (Force feel)
     if (d.flags & MOM) o += ", \"momentary\": true";
     if (d.flags & INT) o += ", \"display\": \"int\"";
     if (d.flags & STR) o += ", \"display\": \"string\"";

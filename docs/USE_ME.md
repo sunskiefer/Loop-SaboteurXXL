@@ -81,7 +81,7 @@ Steps:
    ```
 
 5. Answer **y** when it asks. It checks the device, stops MPC, copies the plugin to
-   `/sdcard/Synths/ANDREALPHEUS - VST - Loop-SaboteurXXL/`, backs up `MPC.settings`, adds the plugin to MPC's plugin
+   `/sdcard/Synths/L'Cronx - VST - Loop-SaboteurXXL/`, backs up `MPC.settings`, adds the plugin to MPC's plugin
    list and starts MPC again. (`-y` after `install.sh` skips the question.)
 
 The zip's own `INSTALL.md` also explains how to install by hand.
@@ -92,7 +92,7 @@ The zip's own `INSTALL.md` also explains how to install by hand.
 
 1. Open the insert effects of the track you want to wreck: an audio track with a loop, a drum track, a submix, or
    the master.
-2. Add a plugin and choose **Loop-SaboteurXXL** (manufacturer **ANDREALPHEUS**).
+2. Add a plugin and choose **Loop-SaboteurXXL** (manufacturer **L'Cronx**).
 3. Open it: its screen fills MPC's plugin view, and the **Q-Links follow the page** you're on.
 
 **Where to put it:**

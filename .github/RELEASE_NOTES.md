@@ -1,3 +1,5 @@
+> **0.1.2** is 0.1.1 packed under L'Cronx (plugin folder `L'Cronx - VST - Loop-SaboteurXXL`); nothing else changed. Uninstall 0.1.1 first.
+
 **Loop-SaboteurXXL**: Loop Saboteur, the glitch / chop / beat-slicer effect by Stephen McLeod Blythe / AMFAS
 ([clickysteve/Loop-Saboteur](https://github.com/clickysteve/Loop-Saboteur)), as a native insert effect for MPC OS on
 the Akai Force. Art and build by Claude; developer L'Cronx.

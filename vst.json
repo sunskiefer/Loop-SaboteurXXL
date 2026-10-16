@@ -1,8 +1,8 @@
 {
   "name": "Loop-SaboteurXXL",
-  "vendor": "ANDREALPHEUS",
+  "vendor": "L'Cronx",
   "uid": "AnLs",
-  "version": 1001,
+  "version": 1002,
   "so": "loop_saboteurxxl.so",
   "params": "params.json",
   "effect": true,

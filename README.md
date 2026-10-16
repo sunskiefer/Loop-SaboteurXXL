@@ -4,7 +4,7 @@
 MPC OS on the Akai Force.**
 
 Loop-SaboteurXXL is a VST2 insert effect for MPC OS's built-in plugin host, made by L'Cronx (shown on the device as
-**Loop-SaboteurXXL** by **ANDREALPHEUS**). It is a port of [**Loop Saboteur**](https://github.com/clickysteve/Loop-Saboteur)
+**Loop-SaboteurXXL** by **L'Cronx**). It is a port of [**Loop Saboteur**](https://github.com/clickysteve/Loop-Saboteur)
 1.0.0, a destructive audio effect in the µ-Ziq / Aphex / OctaMed tradition: it keeps a rolling recording of the last
 bars going through it and, on MPC's tempo, sabotages it with retriggered, pitched, reversed, stretched and crushed
 slices. Eight **Acts** (complete sound snapshots with four MODs each) are played freely or stamped onto a 64-step
@@ -52,7 +52,7 @@ Saboteur's own code; this port gives it MPC screens, Q-Links, project saving and
 
 ## Quick start
 
-1. Install it (below) and insert **Loop-SaboteurXXL** (manufacturer ANDREALPHEUS) on a track with a loop playing.
+1. Install it (below) and insert **Loop-SaboteurXXL** (manufacturer L'Cronx) on a track with a loop playing.
 2. **Press play.** Like the original, it chops on the song's grid, so it only acts while MPC plays: you hear the
    loop with slices of the last bars layered in (Act A, Division 1/16).
 3. On **ACTS SEQ** turn **PRESET** to load a factory preset into the selected Act. Try a few, on different Acts (the
@@ -87,7 +87,7 @@ ssh -t root@<device-ip> sh /tmp/Loop-SaboteurXXL-<version>/install.sh
 ```
 
 The installer asks for confirmation (`-y` skips it), **stops MPC** (save your project first), copies the plugin to
-`/sdcard/Synths/ANDREALPHEUS - VST - Loop-SaboteurXXL/`, backs up and edits `MPC.settings`, and starts MPC again.
+`/sdcard/Synths/L'Cronx - VST - Loop-SaboteurXXL/`, backs up and edits `MPC.settings`, and starts MPC again.
 Running it again upgrades in place; `uninstall.sh` removes it the same way. Banks go in
 `/sdcard/Loop-SaboteurXXL Banks` (made on the first save), outside the plugin folder, so they survive updates.
 

@@ -49,12 +49,13 @@ jobs:
       - name: Package
         run: |
           VERSION="${{ steps.ver.outputs.version }}"
+          python3 tools/release_quotes.py third_party/mpc-vst-plugins
           python3 third_party/mpc-vst-plugins/tools/release.py \
             --so build/arm/loop_saboteurxxl.so \
-            --skin "build/skin/ANDREALPHEUS - VST - Loop-SaboteurXXL" \
+            --skin "build/skin/L'Cronx - VST - Loop-SaboteurXXL" \
             --entry build/pluginlist-entry.xml \
             --version "$VERSION" \
-            --about "Loop-SaboteurXXL by ANDREALPHEUS: Loop Saboteur's glitch / slicer / buffer-destroyer effect for MPC OS" \
+            --about "Loop-SaboteurXXL by L'Cronx: Loop Saboteur's glitch / slicer / buffer-destroyer effect for MPC OS" \
             --id loop-saboteurxxl --repo sunskiefer/Loop-SaboteurXXL --license GPL-3.0-or-later \
             -o dist
 

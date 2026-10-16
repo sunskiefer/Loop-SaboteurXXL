@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.2
+- Packed under **L'Cronx**: the plugin folder is now `L'Cronx - VST - Loop-SaboteurXXL` and MPC lists the maker as L'Cronx. Nothing else
+  changed from 0.1.1. If you installed 0.1.1, run its `uninstall.sh` first (copy out anything you saved inside the plugin
+  folder), then install 0.1.2. The installer handles the ' in the folder name.
+
 ## 0.1.1
 
 - Q-Links on the Force, with the rules learned on a Force with RMXXXL and PlateauXXL: a button (RANDOM, CLEAR, UNDO,
